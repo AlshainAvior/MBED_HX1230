@@ -27,6 +27,12 @@ void HX1230::init(void)
 
     // set contrast
     writeCommand(0x80);
+
+    /*
+    // TODO implement setRotation
+      writeCommand(0xa1); // set SEG direction (A1 to flip horizontal)
+      writeCommand(0xc8); // set COM direction (C8 to flip vert)
+    */
 }
 
 void HX1230::spiTransfer(uint8_t *pBuf, uint8_t bLen, uint8_t isData)
@@ -81,17 +87,26 @@ void HX1230::drawPixel(int16_t x, int16_t y, uint16_t color)
 
 void HX1230::drawFastHLine(int16_t x0, int16_t y0, int16_t w, uint16_t color)
 {
-
+    for (int16_t i = 0; i < w; i++)
+    {
+        drawPixel(x0 + i, y0, color);
+    }
 }
 
 void HX1230::drawFastVLine(int16_t x0, int16_t y0, int16_t h, uint16_t color)
 {
-
+    for (int16_t i = 0; i < h; i++)
+    {
+        drawPixel(x0, y0 + i, color);
+    }
 }
 
-void HX1230::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c)
+void HX1230::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
-
+    for (int16_t i = 0; i < h; i++)
+    {
+        drawFastHLine(x, y + i, w, color);
+    }
 }
 
 void HX1230::writeCommand(unsigned char c)
@@ -116,8 +131,6 @@ void HX1230::setPosition(int x, int y)
 // Length can be anything from 1 to 504 (whole display)
 void HX1230::writeDataBlock(unsigned char *ucBuf, int iLen)
 {
-    int i;
-
     if (_screenOffset < 0)
     {
         return; // invalid
@@ -127,16 +140,8 @@ void HX1230::writeDataBlock(unsigned char *ucBuf, int iLen)
     memcpy(&ucScreen[_screenOffset], ucBuf, iLen);
 
     _screenOffset += iLen;
-    while (iLen) // internal buffer is only 32 unsigned chars
-    {
-        if (iLen >= 32)
-            i = 32;
-        else
-            i = iLen;
-        spiTransfer(ucBuf, i, 1);
-        ucBuf += i;
-        iLen -= i;
-    }
+
+    spiTransfer(ucBuf, iLen, 1);
 }
 
 void HX1230::fillScreen(unsigned char ucData)
